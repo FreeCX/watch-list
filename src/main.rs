@@ -1,4 +1,6 @@
 use std::io::fs::File;
+use std::clone;
+use std::fmt;
 
 pub const NAME: i8 = 0;
 pub const STATUS: i8 = 1;
@@ -6,12 +8,54 @@ pub const CURRENT: i8 = 3;
 pub const MAXIMUM: i8 = 4;
 pub const SCORE: i8 = 6;
 
+#[derive(Clone)]
+enum ListStatus {
+    Error,
+    Complete,
+    Drop,
+    Plan,
+    Watch,
+    Hold,
+}
+
+#[derive(Clone)]
 struct Database {
     name: String,
-    status: String,
+    status: ListStatus,
     current: i32,
     maximum: i32, 
-    score: i8
+    score: u8
+}
+
+fn get_status( data: & str ) -> ListStatus {
+    match data {
+        "complete" => ListStatus::Complete,
+        "drop" => ListStatus::Drop,
+        "plan" => ListStatus::Plan,
+        "watch" => ListStatus::Watch,
+        "hold" => ListStatus::Hold,
+        _ => ListStatus::Error
+    }
+}
+
+impl fmt::String for ListStatus {
+    fn fmt( &self, f: &mut fmt::Formatter ) -> fmt::Result {
+        match *self {
+            ListStatus::Complete => f.write_str( "complete" ),
+            ListStatus::Drop => f.write_str( "drop" ),
+            ListStatus::Plan => f.write_str( "plan" ),
+            ListStatus::Watch => f.write_str( "watch" ),
+            ListStatus::Hold => f.write_str( "hold" ),
+            ListStatus::Error => f.write_str( "<error>" )
+        }
+    }
+} 
+
+impl fmt::String for Database {
+    fn fmt( &self, f: &mut fmt::Formatter ) -> fmt::Result {
+        write!( f, "'{:>16}', status: {:>8}, progress: {:>2} / {:>2}, score: {}", 
+                self.name, self.status.to_string(), self.current, self.maximum, self.score )
+    }
 }
 
 fn tokenize( data: & str, delimeters: & str ) -> Vec< String >  {
@@ -46,11 +90,6 @@ fn tokenize( data: & str, delimeters: & str ) -> Vec< String >  {
     return token;
 }
 
-fn print_item( item: & Database ) {
-    println!( "<add>: '{}', status: {}, progress: {} / {}, score: {}", 
-              item.name, item.status, item.current, item.maximum, item.score );
-}
-
 fn main() {
     let path = Path::new( "anime-list" );
     let display = path.display();
@@ -66,7 +105,7 @@ fn main() {
             let token = tokenize( string.as_slice(), " /\n" );
             let mut item = Database { 
                 name: "".to_string(), 
-                status: "plan".to_string(), 
+                status: ListStatus::Plan,
                 current: 0, 
                 maximum: 0,
                 score: 0
@@ -77,14 +116,8 @@ fn main() {
                     "\"" => {
                         counter = NAME;
                         if item.name.len() > 0 {
-                            print_item( &item );
-                            anime.push( Database {
-                                name: item.name.to_string(),
-                                status: item.status.to_string(),
-                                current: item.current,
-                                maximum: item.maximum,
-                                score: item.score
-                            });
+                            println!( "add: {}", item );
+                            anime.push( item.clone() );
                         }
                     },
                     _ => {
@@ -92,14 +125,17 @@ fn main() {
                     }
                 }
                 match counter {
-                    NAME => item.name  = element.slice_chars( 1, element.len() - 1 ).to_string(),
-                    STATUS => item.status = element.to_string(),
-                    CURRENT => item.current = element.parse::<i32>().unwrap(),
-                    MAXIMUM => item.maximum = element.parse::<i32>().unwrap(),
-                    SCORE => item.score = element.parse::<i8>().unwrap(),
+                    NAME => item.name = element.slice_chars( 1, element.len() - 1 ).to_string(),
+                    STATUS => item.status = get_status( element.as_slice() ),
+                    CURRENT => item.current = element.parse::<i32>().unwrap_or( 0 ),
+                    MAXIMUM => item.maximum = element.parse::<i32>().unwrap_or( 0 ),
+                    SCORE => item.score = element.parse::<u8>().unwrap_or( 0 ),
                     _ => {}
                 };
             }
+            // add last element
+            println!( "add: {}", item );
+            anime.push( item.clone() );
         },
         Err( why ) => panic!( "couldn't read '{}': {}", display, why.desc )
     };
