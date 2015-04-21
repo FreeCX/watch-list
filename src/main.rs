@@ -1,4 +1,4 @@
-#![feature(collections)]
+#![feature(io, fs, core, path, collections)]
 use std::error::Error;
 use std::fmt;
 use std::fs::File;
