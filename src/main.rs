@@ -1,4 +1,8 @@
-use std::io::fs::File;
+#![feature(collections)]
+use std::error::Error;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 
 pub const NAME: i8 = 0;
 pub const STATUS: i8 = 1;
@@ -16,8 +20,8 @@ struct Database {
 
 fn tokenize( data: & str, delimeters: & str ) -> Vec< String >  {
     let mut token: Vec< String > = Vec::new();
-    let mut prev = 0us;
-    let mut next = 0us;
+    let mut prev = 0;
+    let mut next = 0;
     let mut comma = false;
 
     for i in data.chars() {
@@ -28,19 +32,19 @@ fn tokenize( data: & str, delimeters: & str ) -> Vec< String >  {
         if !comma {
             for j in delimeters.chars() {
                 if i == j {
-                    if next - prev >= 1us {
+                    if next - prev >= 1 {
                         token.push( data.slice_chars( prev, next ).to_string() );
-                        prev = next + 1us;
+                        prev = next + 1;
                         break;
                     }
-                    prev = next + 1us;
+                    prev = next + 1;
                 }
             }
         }
-        next += 1us;
+        next += 1;
     }
     // add last token
-    if next - prev >= 1us {
+    if next - prev >= 1 {
         token.push( data.slice_chars( prev, next ).to_string() );
     }
     return token;
@@ -56,14 +60,13 @@ fn main() {
     let display = path.display();
     let mut file = match File::open( &path ) {
         Ok( file ) => file,
-        Err( io_error ) => {
-            panic!( io_error.desc );
-        }
+        Err( why ) => panic!( "[error]: {}", Error::description( &why ) )
     };
     let mut anime: Vec< Database > = Vec::new(); 
-    match file.read_to_string() {
-        Ok( string ) => {
-            let token = tokenize( string.as_slice(), " /\n" );
+    let mut s = String::new();
+    match file.read_to_string(&mut s) {
+        Ok( _ ) => {
+            let tokens = tokenize( s.trim(), " /\n\r\t" );
             let mut item = Database { 
                 name: "".to_string(), 
                 status: "plan".to_string(), 
@@ -72,7 +75,7 @@ fn main() {
                 score: 0
             };
             let mut counter = NAME;
-            for element in token.iter() {
+            for element in tokens {
                 match element.slice_chars( 0, 1 ) {
                     "\"" => {
                         counter = NAME;
@@ -101,6 +104,6 @@ fn main() {
                 };
             }
         },
-        Err( why ) => panic!( "couldn't read '{}': {}", display, why.desc )
+        Err( why ) => panic!( "couldn't read '{}': {}", display, Error::description( &why ) )
     };
 }
