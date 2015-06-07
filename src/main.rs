@@ -2,10 +2,19 @@ extern crate watchlist;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use std::env;
+use std::process::exit;
 use watchlist::extension::*;
 
 fn main() {
-    let path = Path::new( "anime-list" );
+    let data = match env::args().nth( 1 ) {
+        Some( value ) => value,
+        None          => {
+            println!( "usage: {} <database>", env::args().nth( 0 ).unwrap() );
+            exit( 0 );
+        }
+    };
+    let path = Path::new( &data );
     let display = path.display();
     let mut file = match File::open( &path ) {
         Ok( file ) => file,
@@ -38,11 +47,11 @@ fn main() {
                     }
                 }
                 match counter {
-                    NAME => item.name = element.slice( 1, element.len() - 1 ).to_string(),
-                    STATUS => item.status = element.trim().get_status(),
-                    CURRENT => item.current = element.parse::<i32>().unwrap_or( 0 ),
-                    MAXIMUM => item.maximum = element.parse::<i32>().unwrap_or( 0 ),
-                    SCORE => item.score = element.parse::<u8>().unwrap_or( 0 ),
+                    NAME    => item.name = element.slice( 1, element.len() - 1 ).to_string(),
+                    STATUS  => item.status = element.trim().get_status(),
+                    CURRENT => item.current = element.parse::<u32>().unwrap_or( 0 ),
+                    MAXIMUM => item.maximum = element.parse::<u32>().unwrap_or( 0 ),
+                    SCORE   => item.score = element.parse::<u8>().unwrap_or( 0 ),
                     _ => {}
                 };
             }
