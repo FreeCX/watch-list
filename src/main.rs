@@ -1,10 +1,10 @@
-extern crate watchlist;
+mod extension;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::env;
 use std::process::exit;
-use watchlist::extension::*;
+use extension::*;
 
 fn main() {
     let data = match env::args().nth( 1 ) {
