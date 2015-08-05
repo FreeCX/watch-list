@@ -24,9 +24,9 @@ fn main() {
     let mut s = String::new();
     match file.read_to_string( &mut s ) {
         Ok( _ ) => {
-            let tokens = s.trim().tokenize( " /\n\r\t" );
+            let tokens = s.trim_right().tokenize( " /\n\r\t" );
             let mut item = Database { 
-                name: "".to_string(), 
+                name: String::new(), 
                 status: ListStatus::Plan,
                 current: 0, 
                 maximum: 0,
@@ -47,8 +47,8 @@ fn main() {
                     }
                 }
                 match counter {
-                    NAME    => item.name = element.slice( 1, element.len() - 1 ).to_string(),
-                    STATUS  => item.status = element.trim().get_status(),
+                    NAME    => item.name = element.slice( 1, element.len() - 1 ).to_owned(),
+                    STATUS  => item.status = element.get_status(),
                     CURRENT => item.current = element.parse::<u32>().unwrap_or( 0 ),
                     MAXIMUM => item.maximum = element.parse::<u32>().unwrap_or( 0 ),
                     SCORE   => item.score = element.parse::<u8>().unwrap_or( 0 ),

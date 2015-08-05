@@ -57,7 +57,7 @@ impl StrSpec for str {
         let mut begin_byte;
         let mut end_byte;
 
-        begin_byte = if begin >= 0 { Some( begin ) } else { None };
+        begin_byte = Some( begin );
         end_byte = if end <= self.len() { Some( end ) } else { Some( self.len() ) };
         match ( begin_byte, end_byte ) {
             ( None, _ ) => panic!( "slice: `begin` is beyond end of string" ),
@@ -92,7 +92,7 @@ impl StrSpec for str {
                 for j in delimeters.chars() {
                     if i == j {
                         if next - prev >= 1 {
-                            token.push( self.slice( prev, next ).to_string() );
+                            token.push( self.slice( prev, next ).to_owned() );
                             prev = next + 1;
                             break;
                         }
@@ -104,7 +104,7 @@ impl StrSpec for str {
         }
         // add last token
         if next - prev >= 1 {
-            token.push( self.slice( prev, next ).to_string() );
+            token.push( self.slice( prev, next ).to_owned() );
         }
         return token;
     }
