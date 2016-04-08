@@ -7,58 +7,44 @@ use std::process::exit;
 use extension::*;
 
 fn main() {
-    let data = match env::args().nth( 1 ) {
-        Some( value ) => value,
-        None          => {
-            println!( "usage: {} <database>", env::args().nth( 0 ).unwrap() );
-            exit( 0 );
+    let data = match env::args().nth(1) {
+        Some(value) => value,
+        None => {
+            println!("usage: {} <database>", env::args().nth(0).unwrap());
+            exit(0);
         }
     };
-    let path = Path::new( &data );
-    let display = path.display();
-    let mut file = match File::open( &path ) {
-        Ok( file ) => file,
-        Err( why ) => panic!( "[error]: {}", why )
+    let path = Path::new(&data);
+    let mut file = match File::open(&path) {
+        Ok(file) => file,
+        Err(why) => panic!("[error]: {}", why),
     };
-    let mut anime: Vec< Database > = Vec::new(); 
+    let mut anime: Vec<Database> = Vec::new();
     let mut s = String::new();
-    match file.read_to_string( &mut s ) {
-        Ok( _ ) => {
-            let tokens = s.trim_right().tokenize( " /\n\r\t" );
-            let mut item = Database { 
-                name: String::new(), 
-                status: ListStatus::Plan,
-                current: 0, 
-                maximum: 0,
-                score: 0
-            };
-            let mut counter = NAME;
-            for element in tokens {
-                match element.slice( 0, 1 ) {
-                    "\"" => {
-                        counter = NAME;
-                        if item.name.len() > 0 {
-                            println!( "add: {}", item );
-                            anime.push( item.clone() );
-                        }
-                    },
-                    _ => {
-                        counter += 1;
-                    }
-                }
-                match counter {
-                    NAME    => item.name = element.slice( 1, element.len() - 1 ).to_owned(),
-                    STATUS  => item.status = element.get_status(),
-                    CURRENT => item.current = element.parse::<u32>().unwrap_or( 0 ),
-                    MAXIMUM => item.maximum = element.parse::<u32>().unwrap_or( 0 ),
-                    SCORE   => item.score = element.parse::<u8>().unwrap_or( 0 ),
-                    _ => {}
-                };
-            }
-            // add last element
-            println!( "add: {}", item );
-            anime.push( item.clone() );
-        },
-        Err( why ) => panic!( "couldn't read '{}': {}", display, why )
-    };
+    file.read_to_string(&mut s).unwrap();
+    for string in s.lines() {
+        let name_index = string.rfind('"').unwrap();
+        let next_index = name_index + 2;
+        let data: Vec<_> = (&string[next_index..]).split(' ').collect();
+        let name: &str = &string[1..name_index];
+        let progress: Vec<_> = data[2].split('/').collect();
+        let score: u8 = data[4].parse().unwrap();
+        let status = match data[0] {
+            "complete" => ListStatus::Complete,
+            "hold" => ListStatus::Hold,
+            "drop" => ListStatus::Drop,
+            "plan" => ListStatus::Plan,
+            "watch" => ListStatus::Watch,
+            _ => ListStatus::Error
+        };
+        let item = Database {
+            name: name.to_owned(),
+            status: status,
+            current: progress[0].parse::<u32>().unwrap(),
+            maximum: progress[1].parse::<u32>().unwrap_or(0),
+            score: score
+        };
+        println!("item: {}", item);
+        anime.push(item);
+    }
 }
