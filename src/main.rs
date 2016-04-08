@@ -41,7 +41,7 @@ fn main() {
             name: name.to_owned(),
             status: status,
             current: progress[0].parse::<u32>().unwrap(),
-            maximum: progress[1].parse::<u32>().unwrap_or(0),
+            maximum: progress[1].parse::<ShowFormat>().unwrap(),
             score: score
         };
         println!("item: {}", item);
