@@ -64,7 +64,14 @@ fn main() {
                     println!("{}", item);
                 }
             },
-            ExecCmd::Find(regex) => println!("[cmd] find `{}`", regex),
+            ExecCmd::Find(regex) => {
+                println!("[cmd] find `{}`", regex);
+                // for test
+                if let Ok(result) = anime_base.binary_search_by(|i| i.name.cmp(&regex)) {
+                    let item = anime_base.get(result).unwrap();
+                    println!("{}", item);
+                }
+            },
             ExecCmd::FindParam(param) => println!("[cmd] find by param `{:?}`", param),
             ExecCmd::Maximum(value) => println!("[cmd] series limit `{}`", value.get()),
             ExecCmd::Rename(new_name) => println!("[cmd] new name `{}`", new_name),

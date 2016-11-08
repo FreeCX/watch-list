@@ -19,11 +19,11 @@ pub enum SeriesCounter {
 
 #[derive(Debug)]
 pub struct Item {
-    name: String,
-    status: Status,
-    progress: u16,
-    maximum: SeriesCounter,
-    rate: u8
+    pub name: String,
+    pub status: Status,
+    pub progress: u16,
+    pub maximum: SeriesCounter,
+    pub rate: u8
 }
 
 impl<'a> From<&'a str> for Status {
