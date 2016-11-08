@@ -1,4 +1,6 @@
 [package]
-name = "watchlist"
-version = "0.0.1"
-authors = ["dr.FreeCX <dr.freecx@gmail.com>"]
+name = "anilist"
+version = "0.1.0"
+authors = ["Alexey Golubev <dr.freecx@gmail.com>"]
+
+[dependencies]
