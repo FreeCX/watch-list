@@ -42,7 +42,7 @@ fn main() {
             exit(0);
         }
     };
-    let mut anime_base = Vec::new();
+    let mut anime_base = AnimeBase::new();
     let mut file = File::open("anime-list").unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).unwrap();
@@ -60,15 +60,13 @@ fn main() {
             ExecCmd::Delete => println!("[cmd] delete item"),
             ExecCmd::Info => {
                 println!("[cmd] print list");
-                for item in &anime_base {
-                    println!("{}", item);
-                }
+                println!("{}", anime_base);
             },
             ExecCmd::Find(regex) => {
                 println!("[cmd] find `{}`", regex);
                 // for test
-                if let Ok(result) = anime_base.binary_search_by(|i| i.name.cmp(&regex)) {
-                    let item = anime_base.get(result).unwrap();
+                if let Ok(result) = anime_base.list.binary_search_by(|i| i.name.cmp(&regex)) {
+                    let item = anime_base.list.get(result).unwrap();
                     println!("{}", item);
                 }
             },

@@ -39,19 +39,6 @@ impl<'a> From<&'a str> for Status {
     }
 }
 
-impl<'a> Into<&'a str> for Status {
-    fn into(self) -> &'a str {
-        match self {
-            Status::Complete => "complete",
-            Status::Drop => "drop",
-            Status::Plan => "plan",
-            Status::Watch => "watch",
-            Status::Hold => "hold",
-            Status::Error => "<error>"
-        }
-    }
-}
-
 impl SeriesCounter {
     pub fn get(self) -> u16 {
         match self {
@@ -86,5 +73,27 @@ impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "'{:>16}', status: {:?}, progress: {:>2} / {:?}, rate: {}",
                self.name, self.status, self.progress, self.maximum, self.rate)
+    }
+}
+
+impl fmt::Display for Status {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:>8}", match *self {
+            Status::Complete => "complete",
+            Status::Drop => "drop",
+            Status::Plan => "plan",
+            Status::Watch => "watch",
+            Status::Hold => "hold",
+            Status::Error => "<error>"
+        })
+    }
+}
+
+impl fmt::Display for SeriesCounter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            SeriesCounter::Value(value) => format!("{}", value),
+            SeriesCounter::OnGoing => "?".to_owned()
+        })
     }
 }

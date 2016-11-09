@@ -1,6 +1,9 @@
 use parser;
 use base;
 
+use std::cmp;
+use std::fmt;
+
 #[derive(Debug, Clone, Copy)]
 pub enum ParamType {
     Status(base::Status),
@@ -24,6 +27,36 @@ pub enum ExecCmd {
     Rate(u8),
     Write,
     Error
+}
+
+pub struct AnimeBase {
+    pub list: Vec<base::Item>,
+    pub name_len: usize,
+    pub series_len: usize,
+}
+
+impl AnimeBase {
+    pub fn new() -> AnimeBase {
+        AnimeBase { list: Vec::new(), name_len: 0, series_len: 0 }
+    }
+    pub fn push(&mut self, item: base::Item) {
+        self.name_len = cmp::max(item.name.len(), self.name_len);
+        let cur_len = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as u16;
+        self.series_len = cmp::max(self.series_len, cur_len as usize);
+        self.list.push(item);
+    }
+}
+
+impl fmt::Display for AnimeBase {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut result = String::new();
+        for item in &(self.list) {
+            let maximum = format!("{}", item.maximum);
+            result.push_str(&format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10\n",
+               item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len));
+        }
+        write!(f, "{}", result.trim())
+    }
 }
 
 // TODO:
