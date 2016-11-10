@@ -1,3 +1,5 @@
+extern crate regex;
+
 pub mod parser;
 pub mod base;
 pub mod extra;
@@ -7,6 +9,7 @@ use std::io::Read;
 use std::env::args;
 use std::process::exit;
 use extra::*;
+use regex::Regex;
 
 static USAGE_STRING: &'static str = "\
 >> available commands:
@@ -64,10 +67,11 @@ fn main() {
             },
             ExecCmd::Find(regex) => {
                 println!("[cmd] find `{}`", regex);
-                // for test
-                if let Ok(result) = anime_base.list.binary_search_by(|i| i.name.cmp(&regex)) {
-                    let item = anime_base.list.get(result).unwrap();
-                    println!("{}", item);
+                let re = Regex::new(&regex).unwrap();
+                for item in &anime_base.list {
+                    if re.is_match(&item.name) {
+                        println!("found: {}", anime_base.format(item));
+                    }
                 }
             },
             ExecCmd::FindParam(param) => println!("[cmd] find by param `{:?}`", param),

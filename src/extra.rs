@@ -45,6 +45,11 @@ impl AnimeBase {
         self.series_len = cmp::max(self.series_len, cur_len as usize);
         self.list.push(item);
     }
+    pub fn format(&self, item: &base::Item) -> String {
+        let maximum = format!("{}", item.maximum);
+        format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
+               item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len)
+    }
 }
 
 impl fmt::Display for AnimeBase {
