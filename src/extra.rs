@@ -50,6 +50,10 @@ impl AnimeBase {
         format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
                item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len)
     }
+    pub fn format_by_index(&self, index: usize) -> String {
+        let item = self.list.get(index).unwrap();
+        self.format(item)
+    }
 }
 
 impl fmt::Display for AnimeBase {
@@ -94,37 +98,48 @@ impl ExecCmd {
             "d" => ExecCmd::Delete,
             "i" => ExecCmd::Info,
             "f" => {
-                let regex = iter.next().unwrap();
-                ExecCmd::Find(regex.to_owned())
-            },
-            "g" => {
-                let (other, param) = other.split_at(1);
-                match other {
-                    "s" => ExecCmd::FindParam(ParamType::Status(base::Status::from(param))),
-                    "p" => ExecCmd::FindParam(ParamType::Progress(param.parse().unwrap())),
-                    "r" => ExecCmd::FindParam(ParamType::Rate(param.parse().unwrap())),
-                    _ => ExecCmd::Error
+                if other.len() > 1 {
+                    let (other, param) = other.split_at(1);
+                    match other {
+                        "s" => ExecCmd::FindParam(ParamType::Status(base::Status::from(param))),
+                        "p" => ExecCmd::FindParam(ParamType::Progress(param.parse().unwrap())),
+                        "r" => ExecCmd::FindParam(ParamType::Rate(param.parse().unwrap())),
+                        _ => ExecCmd::Error
+                    }
+                } else {
+                    let regex = iter.next().unwrap();
+                    ExecCmd::Find(regex.to_owned())
                 }
             },
-            "m" => {
-                match other {
-                    "?" => ExecCmd::Maximum(base::SeriesCounter::OnGoing),
-                    _ => ExecCmd::Maximum(base::SeriesCounter::Value(other.parse().unwrap()))
+            "s" => {
+                if other.len() >= 1 {
+                    let (other, param) = other.split_at(1);
+                    match other {
+                        "m" => {
+                            match param {
+                                "?" => ExecCmd::Maximum(base::SeriesCounter::OnGoing),
+                                _ => ExecCmd::Maximum(base::SeriesCounter::Value(param.parse().unwrap()))
+                            }
+                        },
+                        "n" => {
+                            let new_name = iter.next().unwrap();
+                            ExecCmd::Rename(new_name.to_owned())
+                        },
+                        "p" => {
+                            let value = param.parse().unwrap();
+                            ExecCmd::Progress(value)
+                        },
+                        "r" => {
+                            let value = param.parse().unwrap();
+                            ExecCmd::Rate(value)
+                        },
+                        "s" => ExecCmd::Status(base::Status::from(param)),
+                        _ => ExecCmd::Error
+                    }
+                } else {
+                    ExecCmd::Error
                 }
-            },
-            "n" => {
-                let new_name = iter.next().unwrap();
-                ExecCmd::Rename(new_name.to_owned())
-            },
-            "p" => {
-                let value = other.parse().unwrap();
-                ExecCmd::Progress(value)
-            },
-            "s" => ExecCmd::Status(base::Status::from(other)),
-            "r" => {
-                let value = other.parse().unwrap();
-                ExecCmd::Rate(value)
-            },
+            }
             "w" => ExecCmd::Write,
             _ => ExecCmd::Error
         }
