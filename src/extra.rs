@@ -11,6 +11,13 @@ pub enum ParamType {
     Rate(u8)
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ErrorStatus {
+    IntParseError,
+    EmptyFieldError,
+    UnknownCommand
+}
+
 #[derive(Debug, Clone)]
 pub enum ExecCmd {
     Increment(u16),
@@ -26,7 +33,7 @@ pub enum ExecCmd {
     Status(base::Status),
     Rate(u8),
     Write,
-    Error
+    Error(ErrorStatus)
 }
 
 pub struct AnimeBase {
@@ -79,21 +86,29 @@ impl ExecCmd {
         match cmd {
             "+" => {
                 if other.len() > 0 {
-                    ExecCmd::Increment(other.parse().unwrap())
+                    match other.parse() {
+                        Ok(value) => ExecCmd::Increment(value),
+                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                    }
                 } else {
                     ExecCmd::Increment(1)
                 }
             },
             "-" => {
                 if other.len() > 0 {
-                    ExecCmd::Decrement(other.parse().unwrap())
+                    match other.parse() {
+                        Ok(value) => ExecCmd::Decrement(value),
+                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                    }
                 } else {
                     ExecCmd::Decrement(1)
                 }
             },
             "a" => {
-                let new_name = iter.next().unwrap();
-                ExecCmd::Rename(new_name.to_owned())
+                match iter.next() {
+                    Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
+                    None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                }
             },
             "d" => ExecCmd::Delete,
             "i" => ExecCmd::Info,
@@ -102,13 +117,25 @@ impl ExecCmd {
                     let (other, param) = other.split_at(1);
                     match other {
                         "s" => ExecCmd::FindParam(ParamType::Status(base::Status::from(param))),
-                        "p" => ExecCmd::FindParam(ParamType::Progress(param.parse().unwrap())),
-                        "r" => ExecCmd::FindParam(ParamType::Rate(param.parse().unwrap())),
-                        _ => ExecCmd::Error
+                        "p" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FindParam(ParamType::Progress(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                            }
+                        },
+                        "r" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                            }
+                        }
+                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
                     }
                 } else {
-                    let regex = iter.next().unwrap();
-                    ExecCmd::Find(regex.to_owned())
+                    match iter.next() {
+                        Some(regex) => ExecCmd::Find(regex.to_owned()),
+                        None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                    }
                 }
             },
             "s" => {
@@ -118,30 +145,41 @@ impl ExecCmd {
                         "m" => {
                             match param {
                                 "?" => ExecCmd::Maximum(base::SeriesCounter::OnGoing),
-                                _ => ExecCmd::Maximum(base::SeriesCounter::Value(param.parse().unwrap()))
+                                _ => {
+                                    match param.parse() {
+                                        Ok(value) => ExecCmd::Maximum(base::SeriesCounter::Value(value)),
+                                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                                    }
+                                }
                             }
                         },
                         "n" => {
-                            let new_name = iter.next().unwrap();
-                            ExecCmd::Rename(new_name.to_owned())
+                            match iter.next() {
+                                Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
+                                None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                            }
                         },
                         "p" => {
-                            let value = param.parse().unwrap();
-                            ExecCmd::Progress(value)
+                            match param.parse() {
+                                Ok(value) => ExecCmd::Progress(value),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
                         },
                         "r" => {
-                            let value = param.parse().unwrap();
-                            ExecCmd::Rate(value)
+                            match param.parse() {
+                                Ok(value) => ExecCmd::Rate(value),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
                         },
                         "s" => ExecCmd::Status(base::Status::from(param)),
-                        _ => ExecCmd::Error
+                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
                     }
                 } else {
-                    ExecCmd::Error
+                    ExecCmd::Error(ErrorStatus::UnknownCommand)
                 }
             }
             "w" => ExecCmd::Write,
-            _ => ExecCmd::Error
+            _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
         }
     }
 }

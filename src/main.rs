@@ -105,7 +105,7 @@ fn main() {
             ExecCmd::Status(status) => println!("[cmd] status `{:?}`", status),
             ExecCmd::Rate(value) => println!("[cmd] rate `{}`", value),
             ExecCmd::Write => println!("[cmd] write changes"),
-            _ => println!("[cmd] unknown command `{}`", cmd)
+            ExecCmd::Error(kind) => println!("[cmd] unknown command `{}`: {:?}", cmd, kind)
         };
     }
 }
