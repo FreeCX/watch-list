@@ -14,7 +14,7 @@ use extra::*;
 use regex::Regex;
 
 static USAGE_STRING: &'static str = "\
->> available commands:
+>> доступные команды:
  -{n}       -- номер серии -n { стандартное значение = 1 }
  +{n}       -- номер серии +n { стандартное значение = 1 }
  a          -- добавить элемент [ a/имя | a/\"имя\" ]
