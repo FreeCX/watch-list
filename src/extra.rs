@@ -3,6 +3,8 @@ use base;
 
 use std::cmp;
 use std::fmt;
+use std::io::{self, Write};
+use std::fs::File;
 
 #[derive(Debug, Clone, Copy)]
 pub enum ParamType {
@@ -46,20 +48,33 @@ impl AnimeBase {
     pub fn new() -> AnimeBase {
         AnimeBase { list: Vec::new(), name_len: 0, series_len: 0 }
     }
+
     pub fn push(&mut self, item: base::Item) {
         self.name_len = cmp::max(item.name.len(), self.name_len);
         let cur_len = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as u16;
         self.series_len = cmp::max(self.series_len, cur_len as usize);
         self.list.push(item);
     }
+
     pub fn format(&self, item: &base::Item) -> String {
         let maximum = format!("{}", item.maximum);
-        format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
-               item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len)
+        let status = format!("{}", item.status);
+        format!("'{:>5$}', status: {:>8}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
+                item.name, status, item.progress, maximum, item.rate, self.name_len, self.series_len)
     }
+
     pub fn format_by_index(&self, index: usize) -> String {
         let item = self.list.get(index).unwrap();
         self.format(item)
+    }
+
+    pub fn write_to_file(&self, output: &mut File) -> Result<(), io::Error> {
+        let mut result = String::new();
+        for item in &(self.list) {
+            result.push_str(&format!("\"{}\" {} progress {}/{} score {}\n",
+                item.name, item.status, item.progress, item.maximum, item.rate));
+        }
+        write!(output, "{}", result)
     }
 }
 
@@ -71,7 +86,7 @@ impl fmt::Display for AnimeBase {
             result.push_str(&format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10\n",
                item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len));
         }
-        write!(f, "{}", result.trim())
+        write!(f, "{}", result)
     }
 }
 

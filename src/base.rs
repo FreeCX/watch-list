@@ -78,7 +78,7 @@ impl fmt::Display for Item {
 
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:>8}", match *self {
+        write!(f, "{}", match *self {
             Status::Complete => "complete",
             Status::Drop => "drop",
             Status::Plan => "plan",
