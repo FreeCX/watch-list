@@ -55,10 +55,14 @@ impl AnimeBase {
 
     pub fn push(&mut self, item: base::Item) {
         self.name_len = cmp::max(item.name.len(), self.name_len);
-        let cur_len = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as
-                      u16;
-        self.series_len = cmp::max(self.series_len, cur_len as usize);
+        let curr = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as u16;
+        self.series_len = cmp::max(self.series_len, curr as usize);
         self.list.push(item);
+    }
+
+    pub fn append(&mut self, name: &str) -> usize {
+        self.push(base::Item::empty(name));
+        self.list.len() - 1
     }
 
     pub fn format(&self, item: &base::Item) -> String {
@@ -91,22 +95,38 @@ impl AnimeBase {
         }
         write!(output, "{}", result)
     }
+
+    fn set_item<'a, F>(&'a mut self, index: usize, cond: F) -> Option<()>
+        where F: FnOnce(&'a mut base::Item) -> Option<()>
+    {
+        self.list.get_mut(index).and_then(cond)
+    }
+
+    pub fn set_maximum(&mut self, index: usize, value: base::SeriesCounter) -> Option<()> {
+        self.set_item(index, |f| Some(f.maximum = value))
+    }
+
+    pub fn set_progress(&mut self, index: usize, value: u16) -> Option<()> {
+        self.set_item(index, |f| Some(f.progress = value))
+    }
+
+    pub fn progress_increment(&mut self, index: usize) -> Option<()> {
+        self.set_item(index, |f| Some(f.progress = f.progress.saturating_add(1)))
+    }
+
+    pub fn progress_decrement(&mut self, index: usize) -> Option<()> {
+        self.set_item(index, |f| Some(f.progress = f.progress.saturating_sub(1)))
+    }
 }
 
 impl fmt::Display for AnimeBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
         for item in &(self.list) {
-            let maximum = format!("{}", item.maximum);
-            let f = format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10\n",
-                            item.name,
-                            item.status,
-                            item.progress,
-                            maximum,
-                            item.rate,
-                            self.name_len,
-                            self.series_len);
-            result.push_str(&f);
+            if result.len() > 0 {
+                result.push_str("\n");
+            }
+            result.push_str(&self.format(item));
         }
         write!(f, "{}", result)
     }
@@ -143,7 +163,7 @@ impl ExecCmd {
             }
             "a" => {
                 match iter.next() {
-                    Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
+                    Some(new_name) => ExecCmd::Append(new_name.to_owned()),
                     None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                 }
             }

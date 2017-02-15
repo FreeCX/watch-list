@@ -67,6 +67,16 @@ impl Item {
             rate: raw[5].parse().unwrap(),
         }
     }
+
+    pub fn empty(name: &str) -> Item {
+        Item {
+            name: name.to_owned(),
+            status: Status::Plan,
+            progress: 0,
+            maximum: SeriesCounter::OnGoing,
+            rate: 0,
+        }
+    }
 }
 
 impl fmt::Display for Item {
