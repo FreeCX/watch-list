@@ -1,8 +1,12 @@
 extern crate regex;
+#[macro_use]
+extern crate log;
+extern crate tini;
 
 pub mod parser;
 pub mod base;
 pub mod extra;
+pub mod logger;
 
 use std::fs::File;
 use std::io::Read;
@@ -11,6 +15,7 @@ use std::env::args;
 use std::process::exit;
 use extra::*;
 use regex::Regex;
+use tini::Ini;
 
 static USAGE_STRING: &'static str = "\
 >> доступные команды:
@@ -35,13 +40,10 @@ static USAGE_STRING: &'static str = "\
  w          -- записать изменения в базу
 >> example: 'f/\"One Piece\"/sm?/+5/-/sr7/sp23/ssc/sn/d.gray-man/sm24/w'";
 
-macro_rules! debug {
-    ($($arg:tt)*) => (
-        println!("[DEBUG] {}", format!($($arg)*));
-    )
-}
-
 fn main() {
+    let config = Ini::from_file("./config.ini").unwrap();
+    let log_level: String = config.get("main", "log_level").unwrap();
+    logger::init(&log_level).unwrap();
     let arg_line = match args().nth(1) {
         Some(value) => value,
         None => {
@@ -57,13 +59,13 @@ fn main() {
     for string in buffer.lines() {
         anime_base.push(base::Item::new(string));
     }
-    debug!("command list:");
+    info!("command list:");
     let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
     while let Some(cmd) = iterator.next() {
         match ExecCmd::get(cmd, &mut iterator) {
             ExecCmd::Increment(value) => {
-                debug!("command inc by `{}`", value);
+                info!("command inc by `{}`", value);
                 for index in &anime_list {
                     let progress = anime_base.list.get(*index).unwrap().progress;
                     let result = match progress.checked_add(value) {
@@ -71,11 +73,11 @@ fn main() {
                         None => u16::MAX
                     };
                     anime_base.list.get_mut(*index).unwrap().progress = result;
-                    println!("> u: {}", anime_base.format_by_index(*index));
+                    println!("> update: {}", anime_base.format_by_index(*index));
                 }
             }
             ExecCmd::Decrement(value) => {
-                debug!("command dec by `{}`", value);
+                info!("command dec by `{}`", value);
                 for index in &anime_list {
                     let progress = anime_base.list.get(*index).unwrap().progress;
                     let result = match progress.checked_sub(value) {
@@ -83,43 +85,43 @@ fn main() {
                         None => 0,
                     };
                     anime_base.list.get_mut(*index).unwrap().progress = result;
-                    println!("> u: {}", anime_base.format_by_index(*index));
+                    println!("> update: {}", anime_base.format_by_index(*index));
                 }
             },
-            ExecCmd::Append(name) => debug!("command new anime `{}`", name),
-            ExecCmd::Delete => debug!("command delete item"),
+            ExecCmd::Append(name) => info!("command new anime `{}`", name),
+            ExecCmd::Delete => info!("command delete item"),
             ExecCmd::Info => {
-                debug!("command print list");
+                info!("command print list");
                 println!("{}", anime_base);
             },
             ExecCmd::Find(regex) => {
-                debug!("command find `{}`", regex);
+                info!("command find `{}`", regex);
                 let re = Regex::new(&regex).unwrap();
                 for (index, item) in anime_base.list.iter().enumerate() {
                     if re.is_match(&item.name) {
                         anime_list.push(index);
-                        println!("> f: {}", anime_base.format(item));
+                        println!(">  found: {}", anime_base.format(item));
                     }
                 }
             },
-            ExecCmd::FindParam(param) => debug!("command find by param `{:?}`", param),
-            ExecCmd::Maximum(value) => debug!("command series limit `{}`", value.get()),
-            ExecCmd::Rename(new_name) => debug!("command new name `{}`", new_name),
+            ExecCmd::FindParam(param) => info!("command find by param `{:?}`", param),
+            ExecCmd::Maximum(value) => info!("command series limit `{}`", value.get()),
+            ExecCmd::Rename(new_name) => info!("command new name `{}`", new_name),
             ExecCmd::Progress(value) => {
-                debug!("command progress `{}`", value);
+                info!("command progress `{}`", value);
                 for index in &anime_list {
                     anime_base.list.get_mut(*index).unwrap().progress = value;
-                    println!("> u: {}", anime_base.format_by_index(*index));
+                    println!("> update: {}", anime_base.format_by_index(*index));
                 }
             }
-            ExecCmd::Status(status) => debug!("command status `{:?}`", status),
-            ExecCmd::Rate(value) => debug!("command rate `{}`", value),
+            ExecCmd::Status(status) => info!("command status `{:?}`", status),
+            ExecCmd::Rate(value) => info!("command rate `{}`", value),
             ExecCmd::Write => {
-                debug!("command write changes");
+                info!("command write changes");
                 let mut file = File::create("anime-list").unwrap();
                 anime_base.write_to_file(&mut file).expect("Can't write to file!");
             },
-            ExecCmd::Error(kind) => debug!("command unknown command `{}`: {:?}", cmd, kind)
+            ExecCmd::Error(kind) => info!("command unknown command `{}`: {:?}", cmd, kind)
         };
     }
 }

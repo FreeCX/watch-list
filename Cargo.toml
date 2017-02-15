@@ -5,3 +5,5 @@ authors = ["Alexey Golubev <dr.freecx@gmail.com>"]
 
 [dependencies]
 regex = "0.1"
+log = "0.3"
+tini = "0.2"
