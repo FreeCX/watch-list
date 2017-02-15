@@ -12,7 +12,7 @@ impl Log for Logger {
 
     fn log(&self, record: &LogRecord) {
         if self.enabled(record.metadata()) {
-            println!("{:<5} [{}] {}",
+            println!("[{:>5}@{}] {}",
                 record.level().to_string(),
                 record.location().module_path(),
                 record.args());
