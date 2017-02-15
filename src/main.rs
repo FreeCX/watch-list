@@ -44,6 +44,7 @@ fn main() {
     let config = Ini::from_file("./config.ini").unwrap();
     let log_level: String = config.get("main", "log_level").unwrap();
     logger::init(&log_level).unwrap();
+
     let arg_line = match args().nth(1) {
         Some(value) => value,
         None => {
@@ -52,6 +53,7 @@ fn main() {
             exit(0);
         }
     };
+
     let mut anime_base = AnimeBase::new();
     let mut file = File::open("anime-list").unwrap();
     let mut buffer = String::new();
@@ -59,6 +61,7 @@ fn main() {
     for string in buffer.lines() {
         anime_base.push(base::Item::new(string));
     }
+
     info!("command list:");
     let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
@@ -70,7 +73,7 @@ fn main() {
                     let progress = anime_base.list.get(*index).unwrap().progress;
                     let result = match progress.checked_add(value) {
                         Some(value) => value,
-                        None => u16::MAX
+                        None => u16::MAX,
                     };
                     anime_base.list.get_mut(*index).unwrap().progress = result;
                     println!("> update: {}", anime_base.format_by_index(*index));
@@ -87,13 +90,13 @@ fn main() {
                     anime_base.list.get_mut(*index).unwrap().progress = result;
                     println!("> update: {}", anime_base.format_by_index(*index));
                 }
-            },
+            }
             ExecCmd::Append(name) => info!("command new anime `{}`", name),
             ExecCmd::Delete => info!("command delete item"),
             ExecCmd::Info => {
                 info!("command print list");
                 println!("{}", anime_base);
-            },
+            }
             ExecCmd::Find(regex) => {
                 info!("command find `{}`", regex);
                 let re = Regex::new(&regex).unwrap();
@@ -103,7 +106,7 @@ fn main() {
                         println!(">  found: {}", anime_base.format(item));
                     }
                 }
-            },
+            }
             ExecCmd::FindParam(param) => info!("command find by param `{:?}`", param),
             ExecCmd::Maximum(value) => info!("command series limit `{}`", value.get()),
             ExecCmd::Rename(new_name) => info!("command new name `{}`", new_name),
@@ -120,8 +123,8 @@ fn main() {
                 info!("command write changes");
                 let mut file = File::create("anime-list").unwrap();
                 anime_base.write_to_file(&mut file).expect("Can't write to file!");
-            },
-            ExecCmd::Error(kind) => info!("command unknown command `{}`: {:?}", cmd, kind)
+            }
+            ExecCmd::Error(kind) => info!("command unknown command `{}`: {:?}", cmd, kind),
         };
     }
 }

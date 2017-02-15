@@ -1,7 +1,7 @@
 use super::log::{self, Log, LogLevel, LogMetadata, LogRecord, SetLoggerError};
 
 struct Logger {
-    log_level: LogLevel
+    log_level: LogLevel,
 }
 
 
@@ -13,9 +13,9 @@ impl Log for Logger {
     fn log(&self, record: &LogRecord) {
         if self.enabled(record.metadata()) {
             println!("[{:>5}@{}] {}",
-                record.level().to_string(),
-                record.location().module_path(),
-                record.args());
+                     record.level().to_string(),
+                     record.location().module_path(),
+                     record.args());
         }
     }
 }

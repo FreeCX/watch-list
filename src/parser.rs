@@ -2,25 +2,30 @@
 enum StateMachine {
     Normal,
     Separator,
-    Text
+    Text,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SplitFormat {
     Anime,
-    Commands
+    Commands,
 }
 
 pub struct Splitter<'a> {
     start: usize,
     state: StateMachine,
     string: &'a str,
-    fmt: SplitFormat
+    fmt: SplitFormat,
 }
 
 impl<'a> Splitter<'a> {
     pub fn new(string: &'a str, fmt: SplitFormat) -> Splitter {
-        Splitter { start: 0, state: StateMachine::Normal, string: string, fmt: fmt }
+        Splitter {
+            start: 0,
+            state: StateMachine::Normal,
+            string: string,
+            fmt: fmt,
+        }
     }
 
     fn anime_cycle(state: StateMachine, character: char) -> (StateMachine, Option<char>) {
@@ -34,7 +39,7 @@ impl<'a> Splitter<'a> {
             (Separator, '"') => (Text, None),
             (Separator, _) => (Normal, Some(character)),
             (Text, '"') => (Normal, None),
-            (Text, _) => (Text, Some(character))
+            (Text, _) => (Text, Some(character)),
         }
     }
 
@@ -49,7 +54,7 @@ impl<'a> Splitter<'a> {
             (Separator, '"') => (Text, None),
             (Separator, _) => (Normal, Some(character)),
             (Text, '"') => (Normal, None),
-            (Text, _) => (Text, Some(character))
+            (Text, _) => (Text, Some(character)),
         }
     }
 }
@@ -72,13 +77,13 @@ impl<'a> Iterator for Splitter<'a> {
                     if index - last_start > 0 {
                         return Some(&self.string[last_start..index]);
                     }
-                },
+                }
                 (StateMachine::Text, None) => self.start = index + 1,
                 (StateMachine::Normal, None) => {
-                    let result = &self.string[self.start..index-1];
+                    let result = &self.string[self.start..index - 1];
                     self.start = index + 1;
                     return Some(result);
-                },
+                }
                 _ => {}
             };
         }

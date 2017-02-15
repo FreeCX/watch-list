@@ -8,13 +8,13 @@ pub enum Status {
     Plan,
     Watch,
     Hold,
-    Error
+    Error,
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum SeriesCounter {
     Value(u16),
-    OnGoing
+    OnGoing,
 }
 
 #[derive(Debug)]
@@ -23,7 +23,7 @@ pub struct Item {
     pub status: Status,
     pub progress: u16,
     pub maximum: SeriesCounter,
-    pub rate: u8
+    pub rate: u8,
 }
 
 impl<'a> From<&'a str> for Status {
@@ -34,7 +34,7 @@ impl<'a> From<&'a str> for Status {
             "plan" | "p" => Status::Plan,
             "watch" | "w" => Status::Watch,
             "hold" | "h" => Status::Hold,
-            _ => Status::Error
+            _ => Status::Error,
         }
     }
 }
@@ -59,41 +59,48 @@ impl Item {
             "?" => SeriesCounter::OnGoing,
             value => SeriesCounter::Value(value.parse().unwrap()),
         };
-        Item { 
-            name: raw[0].to_owned(), 
-            status: Status::from(raw[1]), 
-            progress: progress[0].parse().unwrap(), 
+        Item {
+            name: raw[0].to_owned(),
+            status: Status::from(raw[1]),
+            progress: progress[0].parse().unwrap(),
             maximum: maximum,
-            rate: raw[5].parse().unwrap()
+            rate: raw[5].parse().unwrap(),
         }
     }
 }
 
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "'{:>16}', status: {:?}, progress: {:>2} / {:?}, rate: {}",
-               self.name, self.status, self.progress, self.maximum, self.rate)
+        write!(f,
+               "'{:>16}', status: {:?}, progress: {:>2} / {:?}, rate: {}",
+               self.name,
+               self.status,
+               self.progress,
+               self.maximum,
+               self.rate)
     }
 }
 
 impl fmt::Display for Status {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
+        let status = match *self {
             Status::Complete => "complete",
             Status::Drop => "drop",
             Status::Plan => "plan",
             Status::Watch => "watch",
             Status::Hold => "hold",
-            Status::Error => "<error>"
-        })
+            Status::Error => "<error>",
+        };
+        write!(f, "{}", status)
     }
 }
 
 impl fmt::Display for SeriesCounter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match *self {
+        let value = match *self {
             SeriesCounter::Value(value) => format!("{}", value),
-            SeriesCounter::OnGoing => "?".to_owned()
-        })
+            SeriesCounter::OnGoing => "?".to_owned(),
+        };
+        write!(f, "{}", value)
     }
 }

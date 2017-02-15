@@ -10,14 +10,14 @@ use std::fs::File;
 pub enum ParamType {
     Status(base::Status),
     Progress(u16),
-    Rate(u8)
+    Rate(u8),
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum ErrorStatus {
     IntParseError,
     EmptyFieldError,
-    UnknownCommand
+    UnknownCommand,
 }
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ pub enum ExecCmd {
     Status(base::Status),
     Rate(u8),
     Write,
-    Error(ErrorStatus)
+    Error(ErrorStatus),
 }
 
 pub struct AnimeBase {
@@ -46,12 +46,17 @@ pub struct AnimeBase {
 
 impl AnimeBase {
     pub fn new() -> AnimeBase {
-        AnimeBase { list: Vec::new(), name_len: 0, series_len: 0 }
+        AnimeBase {
+            list: Vec::new(),
+            name_len: 0,
+            series_len: 0,
+        }
     }
 
     pub fn push(&mut self, item: base::Item) {
         self.name_len = cmp::max(item.name.len(), self.name_len);
-        let cur_len = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as u16;
+        let cur_len = (f32::log10(cmp::max(item.maximum.get(), item.progress) as f32)).round() as
+                      u16;
         self.series_len = cmp::max(self.series_len, cur_len as usize);
         self.list.push(item);
     }
@@ -60,7 +65,13 @@ impl AnimeBase {
         let maximum = format!("{}", item.maximum);
         let status = format!("{}", item.status);
         format!("'{:>5$}', status: {:>8}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
-                item.name, status, item.progress, maximum, item.rate, self.name_len, self.series_len)
+                item.name,
+                status,
+                item.progress,
+                maximum,
+                item.rate,
+                self.name_len,
+                self.series_len)
     }
 
     pub fn format_by_index(&self, index: usize) -> String {
@@ -72,7 +83,11 @@ impl AnimeBase {
         let mut result = String::new();
         for item in &(self.list) {
             result.push_str(&format!("\"{}\" {} progress {}/{} score {}\n",
-                item.name, item.status, item.progress, item.maximum, item.rate));
+                                     item.name,
+                                     item.status,
+                                     item.progress,
+                                     item.maximum,
+                                     item.rate));
         }
         write!(output, "{}", result)
     }
@@ -83,8 +98,15 @@ impl fmt::Display for AnimeBase {
         let mut result = String::new();
         for item in &(self.list) {
             let maximum = format!("{}", item.maximum);
-            result.push_str(&format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10\n",
-               item.name, item.status, item.progress, maximum, item.rate, self.name_len, self.series_len));
+            let f = format!("'{:>5$}', status: {}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10\n",
+                            item.name,
+                            item.status,
+                            item.progress,
+                            maximum,
+                            item.rate,
+                            self.name_len,
+                            self.series_len);
+            result.push_str(&f);
         }
         write!(f, "{}", result)
     }
@@ -103,28 +125,28 @@ impl ExecCmd {
                 if other.len() > 0 {
                     match other.parse() {
                         Ok(value) => ExecCmd::Increment(value),
-                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                     }
                 } else {
                     ExecCmd::Increment(1)
                 }
-            },
+            }
             "-" => {
                 if other.len() > 0 {
                     match other.parse() {
                         Ok(value) => ExecCmd::Decrement(value),
-                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                     }
                 } else {
                     ExecCmd::Decrement(1)
                 }
-            },
+            }
             "a" => {
                 match iter.next() {
                     Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
-                    None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                    None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                 }
-            },
+            }
             "d" => ExecCmd::Delete,
             "i" => ExecCmd::Info,
             "f" => {
@@ -135,24 +157,24 @@ impl ExecCmd {
                         "p" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Progress(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
-                        },
+                        }
                         "r" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
-                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
+                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
                 } else {
                     match iter.next() {
                         Some(regex) => ExecCmd::Find(regex.to_owned()),
-                        None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                        None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                     }
                 }
-            },
+            }
             "s" => {
                 if other.len() >= 1 {
                     let (other, param) = other.split_at(1);
@@ -162,39 +184,41 @@ impl ExecCmd {
                                 "?" => ExecCmd::Maximum(base::SeriesCounter::OnGoing),
                                 _ => {
                                     match param.parse() {
-                                        Ok(value) => ExecCmd::Maximum(base::SeriesCounter::Value(value)),
-                                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError)
+                                        Ok(value) => {
+                                            ExecCmd::Maximum(base::SeriesCounter::Value(value))
+                                        }
+                                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                                     }
                                 }
                             }
-                        },
+                        }
                         "n" => {
                             match iter.next() {
                                 Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
-                                None => ExecCmd::Error(ErrorStatus::EmptyFieldError)
+                                None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                             }
-                        },
+                        }
                         "p" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::Progress(value),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
-                        },
+                        }
                         "r" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::Rate(value),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
-                        },
+                        }
                         "s" => ExecCmd::Status(base::Status::from(param)),
-                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
+                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
                 } else {
                     ExecCmd::Error(ErrorStatus::UnknownCommand)
                 }
             }
             "w" => ExecCmd::Write,
-            _ => ExecCmd::Error(ErrorStatus::UnknownCommand)
+            _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
         }
     }
 }
