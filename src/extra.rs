@@ -110,6 +110,18 @@ impl AnimeBase {
         self.set_item(index, |f| Some(f.progress = value))
     }
 
+    pub fn set_status(&mut self, index: usize, status: base::Status) -> Option<()> {
+        self.set_item(index, |f| Some(f.status = status))
+    }
+
+    pub fn set_rate(&mut self, index: usize, value: u8) -> Option<()> {
+        self.set_item(index, |f| Some(f.rate = value))
+    }
+
+    pub fn set_name(&mut self, index: usize, name: &String) -> Option<()> {
+        self.set_item(index, |f| Some(f.name = name.clone()))
+    }
+
     pub fn progress_increment(&mut self, index: usize) -> Option<()> {
         self.set_item(index, |f| Some(f.progress = f.progress.saturating_add(1)))
     }

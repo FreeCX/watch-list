@@ -92,6 +92,7 @@ fn main() {
             }
             ExecCmd::Delete => {
                 debug!("command delete item");
+                // TODO: implement
             }
             ExecCmd::Info => {
                 debug!("command print list");
@@ -109,6 +110,7 @@ fn main() {
             }
             ExecCmd::FindParam(param) => {
                 debug!("command find by param `{:?}`", param);
+                // TODO: implement
             }
             ExecCmd::Maximum(value) => {
                 debug!("command series limit to `{}`", value);
@@ -119,6 +121,10 @@ fn main() {
             }
             ExecCmd::Rename(new_name) => {
                 debug!("command new name `{}`", new_name);
+                for index in &anime_list {
+                    anime_base.set_name(*index, &new_name).unwrap();
+                    println!("> update: {}", anime_base.format_by_index(*index));
+                }
             }
             ExecCmd::Progress(value) => {
                 debug!("command progress `{}`", value);
@@ -129,9 +135,17 @@ fn main() {
             }
             ExecCmd::Status(status) => {
                 debug!("command status `{:?}`", status);
+                for index in &anime_list {
+                    anime_base.set_status(*index, status).unwrap();
+                    println!("> update: {}", anime_base.format_by_index(*index));
+                }
             }
             ExecCmd::Rate(value) => {
                 debug!("command rate `{}`", value);
+                for index in &anime_list {
+                    anime_base.set_rate(*index, value).unwrap();
+                    println!("> update: {}", anime_base.format_by_index(*index));
+                }
             }
             ExecCmd::Write => {
                 debug!("command write changes");
