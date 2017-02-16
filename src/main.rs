@@ -43,6 +43,7 @@ fn main() {
     let mut config_file = env::home_dir().unwrap();
     config_file.push(".config/watch-list/config.ini");
     let config = Ini::from_file(config_file.as_path()).unwrap();
+
     let log_level: String = config.get("main", "log_level").unwrap();
     let filename: String = config.get("main", "open_file").unwrap();
     logger::init(&log_level).unwrap();
@@ -110,7 +111,18 @@ fn main() {
             }
             ExecCmd::FindParam(param) => {
                 debug!("command find by param `{:?}`", param);
-                // TODO: implement
+                for (index, item) in anime_base.list.iter().enumerate() {
+                    let is_match = match param {
+                        ParamType::Status(value) => item.status == value,
+                        ParamType::Progress(value) => item.progress == value,
+                        ParamType::Maximum(value) => item.maximum == value,
+                        ParamType::Rate(value) => item.rate == value,
+                    };
+                    if is_match {
+                        anime_list.push(index);
+                        println!(">  found: {}", anime_base.format_by_index(index));
+                    }
+                }
             }
             ExecCmd::Maximum(value) => {
                 debug!("command series limit to `{}`", value);

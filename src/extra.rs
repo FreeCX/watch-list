@@ -10,6 +10,7 @@ use std::fs::File;
 pub enum ParamType {
     Status(base::Status),
     Progress(u16),
+    Maximum(base::SeriesCounter),
     Rate(u8),
 }
 
@@ -192,6 +193,12 @@ impl ExecCmd {
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        "m" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FindParam(ParamType::Maximum(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
+                        }
                         "r" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
@@ -212,16 +219,9 @@ impl ExecCmd {
                     let (other, param) = other.split_at(1);
                     match other {
                         "m" => {
-                            match param {
-                                "?" => ExecCmd::Maximum(base::SeriesCounter::OnGoing),
-                                _ => {
-                                    match param.parse() {
-                                        Ok(value) => {
-                                            ExecCmd::Maximum(base::SeriesCounter::Value(value))
-                                        }
-                                        Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                                    }
-                                }
+                            match param.parse() {
+                                Ok(value) => ExecCmd::Maximum(value),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
                         "n" => {

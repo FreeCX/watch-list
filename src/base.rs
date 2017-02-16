@@ -1,7 +1,9 @@
 use super::parser;
 use std::fmt;
+use std::str::FromStr;
+use extra::ErrorStatus;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Status {
     Complete,
     Drop,
@@ -11,7 +13,7 @@ pub enum Status {
     Error,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SeriesCounter {
     Value(u16),
     OnGoing,
@@ -35,6 +37,22 @@ impl<'a> From<&'a str> for Status {
             "watch" | "w" => Status::Watch,
             "hold" | "h" => Status::Hold,
             _ => Status::Error,
+        }
+    }
+}
+
+impl FromStr for SeriesCounter {
+    type Err = ErrorStatus;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "?" => Ok(SeriesCounter::OnGoing),
+            _ => {
+                match s.parse() {
+                    Ok(value) => Ok(SeriesCounter::Value(value)),
+                    Err(_) => Err(ErrorStatus::IntParseError),
+                }
+            }
         }
     }
 }
