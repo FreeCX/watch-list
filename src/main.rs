@@ -10,7 +10,7 @@ pub mod logger;
 
 use std::fs::File;
 use std::io::Read;
-use std::env::args;
+use std::env::{self, args};
 use std::process::exit;
 use extra::*;
 use regex::Regex;
@@ -40,7 +40,9 @@ static USAGE_STRING: &'static str = "\
 >> example: 'f/\"One Piece\"/sm?/+5/-/sr7/sp23/ssc/sn/d.gray-man/sm24/w'";
 
 fn main() {
-    let config = Ini::from_file("./config.ini").unwrap();
+    let mut config_file = env::home_dir().unwrap();
+    config_file.push(".config/watch-list/config.ini");
+    let config = Ini::from_file(config_file.as_path()).unwrap();
     let log_level: String = config.get("main", "log_level").unwrap();
     let filename: String = config.get("main", "open_file").unwrap();
     logger::init(&log_level).unwrap();
@@ -56,7 +58,7 @@ fn main() {
 
     debug!("read list from file `{}`", filename);
     let mut anime_base = AnimeBase::new();
-    let mut file = File::open(filename).unwrap();
+    let mut file = File::open(&filename).unwrap();
     let mut buffer = String::new();
     file.read_to_string(&mut buffer).unwrap();
     for string in buffer.lines() {
@@ -133,7 +135,7 @@ fn main() {
             }
             ExecCmd::Write => {
                 debug!("command write changes");
-                let mut file = File::create("anime-list").unwrap();
+                let mut file = File::create(&filename).unwrap();
                 anime_base.write_to_file(&mut file).expect("Can't write to file!");
             }
             ExecCmd::Error(kind) => warn!("command unknown `{}`: {:?}", cmd, kind),
