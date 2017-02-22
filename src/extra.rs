@@ -123,12 +123,12 @@ impl AnimeBase {
         self.set_item(index, |f| Some(f.name = name.clone()))
     }
 
-    pub fn progress_increment(&mut self, index: usize) -> Option<()> {
-        self.set_item(index, |f| Some(f.progress = f.progress.saturating_add(1)))
+    pub fn progress_increment_by(&mut self, index: usize, value: u16) -> Option<()> {
+        self.set_item(index, |f| Some(f.progress = f.progress.saturating_add(value)))
     }
 
-    pub fn progress_decrement(&mut self, index: usize) -> Option<()> {
-        self.set_item(index, |f| Some(f.progress = f.progress.saturating_sub(1)))
+    pub fn progress_decrement_by(&mut self, index: usize, value: u16) -> Option<()> {
+        self.set_item(index, |f| Some(f.progress = f.progress.saturating_sub(value)))
     }
 }
 
