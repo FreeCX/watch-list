@@ -30,6 +30,7 @@ pub enum ExecCmd {
     Info,
     Find(String),
     FindParam(ParamType),
+    FilterParam(ParamType),
     Maximum(base::SeriesCounter),
     Rename(String),
     Progress(u16),
@@ -97,6 +98,10 @@ impl AnimeBase {
         write!(output, "{}", result)
     }
 
+    pub fn get_item(&self, index: usize) -> Option<&base::Item> {
+        self.list.get(index)
+    }
+
     fn set_item<'a, F>(&'a mut self, index: usize, cond: F) -> Option<()>
         where F: FnOnce(&'a mut base::Item) -> Option<()>
     {
@@ -145,60 +150,69 @@ impl fmt::Display for AnimeBase {
     }
 }
 
-// TODO:
-// - rewrite this code
-// FIX:
-// - (...).parse().unwrap()
-// - (...).unwrap()
 impl ExecCmd {
     pub fn get(cmd: &str, iter: &mut parser::Splitter) -> ExecCmd {
         let (cmd, other) = cmd.split_at(1);
         match cmd {
+            // Increment series progress
             "+" => {
                 if other.len() > 0 {
+                    // by value
                     match other.parse() {
                         Ok(value) => ExecCmd::Increment(value),
                         Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                     }
                 } else {
+                    // by 1
                     ExecCmd::Increment(1)
                 }
             }
+            // decrement series progress
             "-" => {
                 if other.len() > 0 {
+                    // by value
                     match other.parse() {
                         Ok(value) => ExecCmd::Decrement(value),
                         Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                     }
                 } else {
+                    // by 1
                     ExecCmd::Decrement(1)
                 }
             }
+            // append new item
             "a" => {
                 match iter.next() {
                     Some(new_name) => ExecCmd::Append(new_name.to_owned()),
                     None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                 }
             }
+            // delete
             "d" => ExecCmd::Delete,
+            // info
             "i" => ExecCmd::Info,
+            // find
             "f" => {
                 if other.len() > 1 {
                     let (other, param) = other.split_at(1);
                     match other {
+                        // by status
                         "s" => ExecCmd::FindParam(ParamType::Status(base::Status::from(param))),
+                        // by progress
                         "p" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Progress(value)),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        // by series maximum
                         "m" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Maximum(value)),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        // by rate
                         "r" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
@@ -208,40 +222,47 @@ impl ExecCmd {
                         _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
                 } else {
+                    // by name
                     match iter.next() {
                         Some(regex) => ExecCmd::Find(regex.to_owned()),
                         None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                     }
                 }
             }
+            // set
             "s" => {
                 if other.len() >= 1 {
                     let (other, param) = other.split_at(1);
                     match other {
+                        // series max
                         "m" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::Maximum(value),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        // series name
                         "n" => {
                             match iter.next() {
                                 Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
                                 None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
                             }
                         }
+                        // series progress
                         "p" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::Progress(value),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        // series rate
                         "r" => {
                             match param.parse() {
                                 Ok(value) => ExecCmd::Rate(value),
                                 Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
                             }
                         }
+                        // series status
                         "s" => ExecCmd::Status(base::Status::from(param)),
                         _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
@@ -249,7 +270,42 @@ impl ExecCmd {
                     ExecCmd::Error(ErrorStatus::UnknownCommand)
                 }
             }
+            // write command
             "w" => ExecCmd::Write,
+            // filter command
+            "x" => {
+                if other.len() > 1 {
+                    let (other, param) = other.split_at(1);
+                    match other {
+                        // status
+                        "s" => ExecCmd::FilterParam(ParamType::Status(base::Status::from(param))),
+                        // progress
+                        "p" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FilterParam(ParamType::Progress(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
+                        }
+                        // series max
+                        "m" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FilterParam(ParamType::Maximum(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
+                        }
+                        // rate
+                        "r" => {
+                            match param.parse() {
+                                Ok(value) => ExecCmd::FilterParam(ParamType::Rate(value)),
+                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                            }
+                        }
+                        _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
+                    }
+                } else {
+                    ExecCmd::Error(ErrorStatus::UnknownCommand)
+                }
+            }
             _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
         }
     }

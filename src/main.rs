@@ -30,7 +30,14 @@ static USAGE_STRING: &'static str = "\
    fs{??}   -- по статусу { ?? -- буква статуса }
      где ??: c -- complete, d -- drop, h -- hold, p -- plan, w -- watch
    fp{??}   -- по номеру серии { ?? -- номер серии }
+   fm{??}   -- по количеству серий в сезоне { ?? -- количество серий в сезоне }
    fr{??}   -- по оценке { ?? -- оценка }
+ x{??}      -- фильтровать список полученный после f{??}
+   xs{??}   -- по статусу { ?? -- буква статуса }
+     где ??: c -- complete, d -- drop, h -- hold, p -- plan, w -- watch
+   xp{??}   -- по номеру серии { ?? -- номер серии }
+   xm{??}   -- по количеству серий в сезоне { ?? -- количество серий в сезоне }
+   xr{??}   -- по оценке { ?? -- оценка }
  s{??}      -- установить параметр
   sn        -- изменить имя на новое [ sn/имя | sn/\"имя\" ]
   sm{число} -- изменить максимальный номер серии { ? в случае онгоинга }
@@ -144,6 +151,25 @@ fn main() {
                         println!("{}", colorizer(item));
                     }
                 }
+            }
+            ExecCmd::FilterParam(param) => {
+                debug!("command filter by param `{:?}`", param);
+                let mut new_anime_list = Vec::new();
+                for index in anime_list.into_iter() {
+                    let item = anime_base.get_item(index).unwrap();
+                    let is_match = match param {
+                        ParamType::Status(value) => item.status == value,
+                        ParamType::Progress(value) => item.progress == value,
+                        ParamType::Maximum(value) => item.maximum == value,
+                        ParamType::Rate(value) => item.rate == value,
+                    };
+                    if is_match {
+                        new_anime_list.push(index);
+                        let item = format!("> filter: {}", anime_base.format(item));
+                        println!("{}", colorizer(item));
+                    }
+                }
+                anime_list = new_anime_list;
             }
             ExecCmd::Maximum(value) => {
                 debug!("command series limit to `{}`", value);
