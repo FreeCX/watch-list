@@ -91,10 +91,19 @@ fn main() {
     debug!("command list:");
     let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
-    // I have no idea how to check ExecCmd::Filter
-    let filter_command = arg_line.contains('x');
-    while let Some(cmd) = iterator.next() {
-        match ExecCmd::get(cmd, &mut iterator) {
+    let mut commands = Vec::new();
+    let mut filter_command = false;
+    // collect all input commands
+    while let Some(item) = iterator.next() {
+        let cmd = ExecCmd::get(item, &mut iterator);
+        match cmd {
+            ExecCmd::FilterParam(_) => filter_command = true,
+            _ => ()
+        }
+        commands.push((item, cmd));
+    }
+    for (item, cmd) in commands {
+        match cmd {
             ExecCmd::Increment(value) => {
                 debug!("command inc by `{}`", value);
                 for index in &anime_list {
@@ -218,7 +227,7 @@ fn main() {
                 anime_base.write_to_file(&mut file).expect("Can't write to file!");
                 save_flag = true;
             }
-            ExecCmd::Error(kind) => warn!("`{}`: {:?}", cmd, kind),
+            ExecCmd::Error(kind) => warn!("`{}`: {:?}", item, kind),
         };
     }
     if update_flag {
