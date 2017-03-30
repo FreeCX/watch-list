@@ -91,6 +91,8 @@ fn main() {
     debug!("command list:");
     let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
+    // I have no idea how to check ExecCmd::Filter
+    let filter_command = arg_line.contains('x');
     while let Some(cmd) = iterator.next() {
         match ExecCmd::get(cmd, &mut iterator) {
             ExecCmd::Increment(value) => {
@@ -131,8 +133,10 @@ fn main() {
                 for (index, item) in anime_base.list.iter().enumerate() {
                     if re.is_match(&item.name) {
                         anime_list.push(index);
-                        let item = format!(">  found: {}", anime_base.format(item));
-                        println!("{}", colorizer(item));
+                        if !filter_command {
+                            let item = format!(">  found: {}", anime_base.format(item));
+                            println!("{}", colorizer(item));
+                        }
                     }
                 }
             }
@@ -147,8 +151,10 @@ fn main() {
                     };
                     if is_match {
                         anime_list.push(index);
-                        let item = format!(">  found: {}", anime_base.format(item));
-                        println!("{}", colorizer(item));
+                        if !filter_command {
+                            let item = format!(">  found: {}", anime_base.format(item));
+                            println!("{}", colorizer(item));
+                        }
                     }
                 }
             }
