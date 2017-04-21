@@ -109,15 +109,55 @@ impl AnimeBase {
     }
 
     pub fn set_maximum(&mut self, index: usize, value: base::SeriesCounter) -> Option<()> {
-        self.set_item(index, |f| Some(f.maximum = value))
+        self.set_item(index, |f| {
+            f.maximum = value;
+            match f.maximum {
+                base::SeriesCounter::Value(max) => {
+                    if f.progress >= max {
+                        f.status = base::Status::Complete;
+                    } else {
+                        f.status = base::Status::Watch;
+                    }
+                }
+                _ => ()
+            }
+            Some(())
+        })
+    }
+
+    fn update_progress_status<'a>(f: &'a mut base::Item) {
+        match f.maximum {
+            base::SeriesCounter::Value(max) => {
+                if f.progress >= max {
+                    f.progress = max;
+                    f.status = base::Status::Complete;
+                } else {
+                    f.status = base::Status::Watch;
+                }
+            }
+            _ => ()
+        }
     }
 
     pub fn set_progress(&mut self, index: usize, value: u16) -> Option<()> {
-        self.set_item(index, |f| Some(f.progress = value))
+        self.set_item(index, |f| {
+            f.progress = value;
+            AnimeBase::update_progress_status(f);
+            Some(())
+        })
     }
 
     pub fn set_status(&mut self, index: usize, status: base::Status) -> Option<()> {
-        self.set_item(index, |f| Some(f.status = status))
+        self.set_item(index, |f| {
+            f.status = status;
+            if status == base::Status::Complete {
+                match f.maximum {
+                    base::SeriesCounter::Value(max) => f.progress = max,
+                    _ => ()
+                }
+            }
+            Some(())
+        })
     }
 
     pub fn set_rate(&mut self, index: usize, value: u8) -> Option<()> {
@@ -129,11 +169,19 @@ impl AnimeBase {
     }
 
     pub fn progress_increment_by(&mut self, index: usize, value: u16) -> Option<()> {
-        self.set_item(index, |f| Some(f.progress = f.progress.saturating_add(value)))
+        self.set_item(index, |f| {
+            f.progress = f.progress.saturating_add(value);
+            AnimeBase::update_progress_status(f);
+            Some(())
+        })
     }
 
     pub fn progress_decrement_by(&mut self, index: usize, value: u16) -> Option<()> {
-        self.set_item(index, |f| Some(f.progress = f.progress.saturating_sub(value)))
+        self.set_item(index, |f| {
+            f.progress = f.progress.saturating_sub(value);
+            AnimeBase::update_progress_status(f);
+            Some(())
+        })
     }
 }
 

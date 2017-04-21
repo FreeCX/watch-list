@@ -18,6 +18,7 @@ use regex::Regex;
 use tini::Ini;
 use colored::*;
 
+// TODO: check & rewrite
 static USAGE_STRING: &'static str = "\
 >> доступные команды:
  -{n}       -- номер серии -n { стандартное значение = 1 }
@@ -68,6 +69,7 @@ fn main() {
 
     let mut update_flag = false;
     let mut save_flag = false;
+    let mut filter_command = false;
     let mut parity_item = 0;
 
     debug!("read list from file `{}`", filename);
@@ -92,7 +94,6 @@ fn main() {
     let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
     let mut commands = Vec::new();
-    let mut filter_command = false;
     // collect all input commands
     while let Some(item) = iterator.next() {
         let cmd = ExecCmd::get(item, &mut iterator);
