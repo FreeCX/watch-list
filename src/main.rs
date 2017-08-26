@@ -50,9 +50,11 @@ static USAGE_STRING: &'static str = "\
 >> example: 'f/\"One Piece\"/sm?/+5/-/sr7/sp23/ssc/sn/d.gray-man/sm24/w'";
 
 fn main() {
-    let mut config_file = env::home_dir().unwrap();
-    config_file.push(".config/watch-list/config.ini");
-    let config = Ini::from_file(config_file.as_path()).unwrap();
+    // let mut config_file = env::home_dir().unwrap();
+    // config_file.push(".config/watch-list/config.ini");
+    let config_file = "./config.ini";
+    let config = Ini::from_file(config_file).unwrap();
+    // let config = Ini::from_file(config_file.as_path()).unwrap();
 
     let log_level: String = config.get("main", "log_level").unwrap();
     let filename: String = config.get("main", "open_file").unwrap();
@@ -69,6 +71,7 @@ fn main() {
 
     let mut update_flag = false;
     let mut save_flag = false;
+    let mut delete_flag = false;
     let mut filter_command = false;
     let mut parity_item = 0;
 
@@ -128,7 +131,14 @@ fn main() {
             }
             ExecCmd::Delete => {
                 debug!("command delete item");
-                // TODO: implement
+                let mut remove_list = anime_list.clone();
+                remove_list.sort_by(|a, b| b.cmp(a));
+                for index in remove_list {
+                    let result = format!("> delete: {}", anime_base.format_by_index(index)).red();
+                    anime_base.list.swap_remove(index);
+                    println!("{}", result);
+                }
+                delete_flag = true;
             }
             ExecCmd::Info => {
                 debug!("command print list");
@@ -238,7 +248,7 @@ fn main() {
         }
     }
     if save_flag {
-        println!("{}", if update_flag {
+        println!("{}", if update_flag || delete_flag {
             "> changes saved".red()
         } else {
             "> nothing to save".red()
