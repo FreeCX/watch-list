@@ -1,10 +1,10 @@
-use parser;
-use base;
+use crate::base;
+use crate::parser;
 
 use std::cmp;
 use std::fmt;
-use std::io::{self, Write};
 use std::fs::File;
+use std::io::{self, Write};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ParamType {
@@ -48,11 +48,7 @@ pub struct AnimeBase {
 
 impl AnimeBase {
     pub fn new() -> AnimeBase {
-        AnimeBase {
-            list: Vec::new(),
-            name_len: 0,
-            series_len: 0,
-        }
+        AnimeBase { list: Vec::new(), name_len: 0, series_len: 0 }
     }
 
     pub fn push(&mut self, item: base::Item) {
@@ -68,16 +64,10 @@ impl AnimeBase {
     }
 
     pub fn format(&self, item: &base::Item) -> String {
-        let maximum = format!("{}", item.maximum);
-        let status = format!("{}", item.status);
-        format!("'{:>5$}', status: {:>8}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
-                item.name,
-                status,
-                item.progress,
-                maximum,
-                item.rate,
-                self.name_len,
-                self.series_len)
+        format!(
+            "'{:>5$}', status: {:>8}, progress: {:>6$} / {:>6$}, rate: {:>2} / 10",
+            item.name, item.status, item.progress, item.maximum, item.rate, self.name_len, self.series_len
+        )
     }
 
     pub fn format_by_index(&self, index: usize) -> String {
@@ -88,12 +78,10 @@ impl AnimeBase {
     pub fn write_to_file(&self, output: &mut File) -> Result<(), io::Error> {
         let mut result = String::new();
         for item in &(self.list) {
-            result.push_str(&format!("\"{}\" {} progress {}/{} score {}\n",
-                                     item.name,
-                                     item.status,
-                                     item.progress,
-                                     item.maximum,
-                                     item.rate));
+            result.push_str(&format!(
+                "\"{}\" {} progress {}/{} score {}\n",
+                item.name, item.status, item.progress, item.maximum, item.rate
+            ));
         }
         write!(output, "{}", result)
     }
@@ -103,7 +91,8 @@ impl AnimeBase {
     }
 
     fn set_item<'a, F>(&'a mut self, index: usize, cond: F) -> Option<()>
-        where F: FnOnce(&'a mut base::Item) -> Option<()>
+    where
+        F: FnOnce(&'a mut base::Item) -> Option<()>,
     {
         self.list.get_mut(index).and_then(cond)
     }
@@ -111,31 +100,25 @@ impl AnimeBase {
     pub fn set_maximum(&mut self, index: usize, value: base::SeriesCounter) -> Option<()> {
         self.set_item(index, |f| {
             f.maximum = value;
-            match f.maximum {
-                base::SeriesCounter::Value(max) => {
-                    if f.progress >= max {
-                        f.status = base::Status::Complete;
-                    } else {
-                        f.status = base::Status::Watch;
-                    }
-                }
-                _ => ()
-            }
-            Some(())
-        })
-    }
-
-    fn update_progress_status<'a>(f: &'a mut base::Item) {
-        match f.maximum {
-            base::SeriesCounter::Value(max) => {
+            if let base::SeriesCounter::Value(max) = f.maximum {
                 if f.progress >= max {
-                    f.progress = max;
                     f.status = base::Status::Complete;
                 } else {
                     f.status = base::Status::Watch;
                 }
             }
-            _ => ()
+            Some(())
+        })
+    }
+
+    fn update_progress_status(f: &'_ mut base::Item) {
+        if let base::SeriesCounter::Value(max) = f.maximum {
+            if f.progress >= max {
+                f.progress = max;
+                f.status = base::Status::Complete;
+            } else {
+                f.status = base::Status::Watch;
+            }
         }
     }
 
@@ -151,9 +134,8 @@ impl AnimeBase {
         self.set_item(index, |f| {
             f.status = status;
             if status == base::Status::Complete {
-                match f.maximum {
-                    base::SeriesCounter::Value(max) => f.progress = max,
-                    _ => ()
+                if let base::SeriesCounter::Value(max) = f.maximum {
+                    f.progress = max
                 }
             }
             Some(())
@@ -161,11 +143,17 @@ impl AnimeBase {
     }
 
     pub fn set_rate(&mut self, index: usize, value: u8) -> Option<()> {
-        self.set_item(index, |f| Some(f.rate = value))
+        self.set_item(index, |f| {
+            f.rate = value;
+            Some(())
+        })
     }
 
-    pub fn set_name(&mut self, index: usize, name: &String) -> Option<()> {
-        self.set_item(index, |f| Some(f.name = name.clone()))
+    pub fn set_name(&mut self, index: usize, name: &str) -> Option<()> {
+        self.set_item(index, |f| {
+            f.name = name.to_string();
+            Some(())
+        })
     }
 
     pub fn progress_increment_by(&mut self, index: usize, value: u16) -> Option<()> {
@@ -189,8 +177,8 @@ impl fmt::Display for AnimeBase {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
         for item in &(self.list) {
-            if result.len() > 0 {
-                result.push_str("\n");
+            if !result.is_empty() {
+                result.push('\n');
             }
             result.push_str(&self.format(item));
         }
@@ -204,7 +192,7 @@ impl ExecCmd {
         match cmd {
             // Increment series progress
             "+" => {
-                if other.len() > 0 {
+                if !other.is_empty() {
                     // by value
                     match other.parse() {
                         Ok(value) => ExecCmd::Increment(value),
@@ -217,7 +205,7 @@ impl ExecCmd {
             }
             // decrement series progress
             "-" => {
-                if other.len() > 0 {
+                if !other.is_empty() {
                     // by value
                     match other.parse() {
                         Ok(value) => ExecCmd::Decrement(value),
@@ -229,12 +217,10 @@ impl ExecCmd {
                 }
             }
             // append new item
-            "a" => {
-                match iter.next() {
-                    Some(new_name) => ExecCmd::Append(new_name.to_owned()),
-                    None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
-                }
-            }
+            "a" => match iter.next() {
+                Some(new_name) => ExecCmd::Append(new_name.to_owned()),
+                None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
+            },
             // delete
             "d" => ExecCmd::Delete,
             // info
@@ -247,26 +233,20 @@ impl ExecCmd {
                         // by status
                         "s" => ExecCmd::FindParam(ParamType::Status(base::Status::from(param))),
                         // by progress
-                        "p" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FindParam(ParamType::Progress(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "p" => match param.parse() {
+                            Ok(value) => ExecCmd::FindParam(ParamType::Progress(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // by series maximum
-                        "m" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FindParam(ParamType::Maximum(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "m" => match param.parse() {
+                            Ok(value) => ExecCmd::FindParam(ParamType::Maximum(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // by rate
-                        "r" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "r" => match param.parse() {
+                            Ok(value) => ExecCmd::FindParam(ParamType::Rate(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
                 } else {
@@ -279,37 +259,29 @@ impl ExecCmd {
             }
             // set
             "s" => {
-                if other.len() >= 1 {
+                if !other.is_empty() {
                     let (other, param) = other.split_at(1);
                     match other {
                         // series max
-                        "m" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::Maximum(value),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "m" => match param.parse() {
+                            Ok(value) => ExecCmd::Maximum(value),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // series name
-                        "n" => {
-                            match iter.next() {
-                                Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
-                                None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
-                            }
-                        }
+                        "n" => match iter.next() {
+                            Some(new_name) => ExecCmd::Rename(new_name.to_owned()),
+                            None => ExecCmd::Error(ErrorStatus::EmptyFieldError),
+                        },
                         // series progress
-                        "p" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::Progress(value),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "p" => match param.parse() {
+                            Ok(value) => ExecCmd::Progress(value),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // series rate
-                        "r" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::Rate(value),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "r" => match param.parse() {
+                            Ok(value) => ExecCmd::Rate(value),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // series status
                         "s" => ExecCmd::Status(base::Status::from(param)),
                         _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
@@ -328,26 +300,20 @@ impl ExecCmd {
                         // status
                         "s" => ExecCmd::FilterParam(ParamType::Status(base::Status::from(param))),
                         // progress
-                        "p" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FilterParam(ParamType::Progress(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "p" => match param.parse() {
+                            Ok(value) => ExecCmd::FilterParam(ParamType::Progress(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // series max
-                        "m" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FilterParam(ParamType::Maximum(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "m" => match param.parse() {
+                            Ok(value) => ExecCmd::FilterParam(ParamType::Maximum(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         // rate
-                        "r" => {
-                            match param.parse() {
-                                Ok(value) => ExecCmd::FilterParam(ParamType::Rate(value)),
-                                Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
-                            }
-                        }
+                        "r" => match param.parse() {
+                            Ok(value) => ExecCmd::FilterParam(ParamType::Rate(value)),
+                            Err(_) => ExecCmd::Error(ErrorStatus::IntParseError),
+                        },
                         _ => ExecCmd::Error(ErrorStatus::UnknownCommand),
                     }
                 } else {

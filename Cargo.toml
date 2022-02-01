@@ -1,10 +1,20 @@
 [package]
 name = "anilist"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Alexey Golubev <dr.freecx@gmail.com>"]
+edition = "2021"
 
 [dependencies]
-regex = "0.1"
-tini = "0.2"
-log = "0.3"
-colored = "1.4"
+regex = "1.5"
+tini = "1.2"
+log = { version = "0.4", features = ["std"] }
+colored = "2.0"
+dirs = "4.0"
+
+[profile.release]
+debug = false
+opt-level = 3
+rpath = false
+lto = true
+debug-assertions = false
+overflow-checks = false

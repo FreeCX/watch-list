@@ -20,12 +20,7 @@ pub struct Splitter<'a> {
 
 impl<'a> Splitter<'a> {
     pub fn new(string: &'a str, fmt: SplitFormat) -> Splitter {
-        Splitter {
-            start: 0,
-            state: StateMachine::Normal,
-            string: string,
-            fmt: fmt,
-        }
+        Splitter { start: 0, state: StateMachine::Normal, string, fmt }
     }
 
     fn anime_cycle(state: StateMachine, character: char) -> (StateMachine, Option<char>) {
@@ -80,7 +75,7 @@ impl<'a> Iterator for Splitter<'a> {
                     let last_start = self.start;
                     self.start = index + 1;
                     if index - last_start > 0 {
-                        return Some(substr(self.string, last_start, index))
+                        return Some(substr(self.string, last_start, index));
                     }
                 }
                 (StateMachine::Text, None) => self.start = index + 1,

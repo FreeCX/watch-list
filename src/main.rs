@@ -1,25 +1,25 @@
 extern crate regex;
 #[macro_use]
 extern crate log;
-extern crate tini;
 extern crate colored;
+extern crate dirs;
+extern crate tini;
 
-mod parser;
 mod base;
 mod extra;
 mod logger;
+mod parser;
 
-use std::fs::File;
-use std::io::Read;
-use std::env::{self, args};
-use std::process::exit;
+use colored::*;
 use extra::*;
 use regex::Regex;
+use std::env::args;
+use std::fs;
+use std::process::exit;
 use tini::Ini;
-use colored::*;
 
 // TODO: check & rewrite
-static USAGE_STRING: &'static str = "\
+static USAGE_STRING: &str = "\
 >> доступные команды:
  -{n}       -- номер серии -n { стандартное значение = 1 }
  +{n}       -- номер серии +n { стандартное значение = 1 }
@@ -50,24 +50,21 @@ static USAGE_STRING: &'static str = "\
 >> example: 'f/\"One Piece\"/sm?/+5/-/sr7/sp23/ssc/sn/d.gray-man/sm24/w'";
 
 fn main() {
-    // let mut config_file = env::home_dir().unwrap();
-    // config_file.push(".config/watch-list/config.ini");
-    let config_file = "./config.ini";
-    let config = Ini::from_file(config_file).unwrap();
-    // let config = Ini::from_file(config_file.as_path()).unwrap();
+    let mut config_file = dirs::home_dir().expect("Cannot detect home folder");
+    config_file.push(".config/watch-list/config.ini");
+    let config = Ini::from_file(config_file.as_path()).expect("Cannot open config file");
 
-    let log_level: String = config.get("main", "log_level").unwrap();
-    let filename: String = config.get("main", "open_file").unwrap();
+    let log_level: String = config.get("main", "log_level").unwrap_or_else(|| "warn".to_owned());
+    let filename: String = config.get("main", "open_file").expect("List file not set");
     logger::init(&log_level).unwrap();
 
-    let arg_line = match args().nth(1) {
-        Some(value) => value,
-        None => {
-            let app_name = args().nth(0).unwrap();
-            println!("usage: {} '<regex>'\n{}", app_name, USAGE_STRING);
-            exit(0);
-        }
-    };
+    let args: Vec<_> = args().collect();
+    if args.len() != 2 {
+        let app_name = &args[0];
+        println!("usage: {} '<regex>'\n{}", app_name, USAGE_STRING);
+        exit(0);
+    }
+    let arg_line = &args[1];
 
     let mut update_flag = false;
     let mut save_flag = false;
@@ -77,9 +74,7 @@ fn main() {
 
     debug!("read list from file `{}`", filename);
     let mut anime_base = AnimeBase::new();
-    let mut file = File::open(&filename).unwrap();
-    let mut buffer = String::new();
-    file.read_to_string(&mut buffer).unwrap();
+    let buffer = fs::read_to_string(&filename).expect("Cannot open list file");
     for string in buffer.lines() {
         anime_base.push(base::Item::new(string));
     }
@@ -94,15 +89,14 @@ fn main() {
     };
 
     debug!("command list:");
-    let mut iterator = parser::Splitter::new(&arg_line, parser::SplitFormat::Commands);
+    let mut iterator = parser::Splitter::new(arg_line, parser::SplitFormat::Commands);
     let mut anime_list: Vec<usize> = Vec::new();
     let mut commands = Vec::new();
     // collect all input commands
     while let Some(item) = iterator.next() {
         let cmd = ExecCmd::get(item, &mut iterator);
-        match cmd {
-            ExecCmd::FilterParam(_) => filter_command = true,
-            _ => ()
+        if let ExecCmd::FilterParam(_) = cmd {
+            filter_command = true
         }
         commands.push((item, cmd));
     }
@@ -111,14 +105,14 @@ fn main() {
             ExecCmd::Increment(value) => {
                 debug!("command inc by `{}`", value);
                 for index in &anime_list {
-                    anime_base.progress_increment_by(*index, value).unwrap();
+                    anime_base.progress_increment_by(*index, value).expect("Problem with increment_by");
                 }
                 update_flag = true;
             }
             ExecCmd::Decrement(value) => {
                 debug!("command dec by `{}`", value);
                 for index in &anime_list {
-                    anime_base.progress_decrement_by(*index, value).unwrap();
+                    anime_base.progress_decrement_by(*index, value).expect("Problem with decrement_by");
                 }
                 update_flag = true;
             }
@@ -143,13 +137,13 @@ fn main() {
             ExecCmd::Info => {
                 debug!("command print list");
                 for item in &anime_base.list {
-                    let item = format!("{}", anime_base.format(item));
+                    let item = anime_base.format(item).to_string();
                     println!("{}", colorizer(item));
                 }
             }
             ExecCmd::Find(regex) => {
                 debug!("command find `{}`", regex);
-                let re = Regex::new(&regex).unwrap();
+                let re = Regex::new(&regex).expect("Problem with regex");
                 for (index, item) in anime_base.list.iter().enumerate() {
                     if re.is_match(&item.name) {
                         anime_list.push(index);
@@ -182,7 +176,7 @@ fn main() {
                 debug!("command filter by param `{:?}`", param);
                 let mut new_anime_list = Vec::new();
                 for index in anime_list.into_iter() {
-                    let item = anime_base.get_item(index).unwrap();
+                    let item = anime_base.get_item(index).expect("Cannot get item");
                     let is_match = match param {
                         ParamType::Status(value) => item.status == value,
                         ParamType::Progress(value) => item.progress == value,
@@ -200,42 +194,42 @@ fn main() {
             ExecCmd::Maximum(value) => {
                 debug!("command series limit to `{}`", value);
                 for index in &anime_list {
-                    anime_base.set_maximum(*index, value).unwrap();
+                    anime_base.set_maximum(*index, value).expect("Problem with set_maximum");
                 }
                 update_flag = true;
             }
             ExecCmd::Rename(new_name) => {
                 debug!("command new name `{}`", new_name);
                 for index in &anime_list {
-                    anime_base.set_name(*index, &new_name).unwrap();
+                    anime_base.set_name(*index, &new_name).expect("Problem with set_name");
                 }
                 update_flag = true;
             }
             ExecCmd::Progress(value) => {
                 debug!("command progress `{}`", value);
                 for index in &anime_list {
-                    anime_base.set_progress(*index, value).unwrap();
+                    anime_base.set_progress(*index, value).expect("Problem with set_progress");
                 }
                 update_flag = true;
             }
             ExecCmd::Status(status) => {
                 debug!("command status `{:?}`", status);
                 for index in &anime_list {
-                    anime_base.set_status(*index, status).unwrap();
+                    anime_base.set_status(*index, status).expect("Problem with set_status");
                 }
                 update_flag = true;
             }
             ExecCmd::Rate(value) => {
                 debug!("command rate `{}`", value);
                 for index in &anime_list {
-                    anime_base.set_rate(*index, value).unwrap();
+                    anime_base.set_rate(*index, value).expect("Problem with set_rate");
                 }
                 update_flag = true;
             }
             ExecCmd::Write => {
                 debug!("command write changes");
-                let mut file = File::create(&filename).unwrap();
-                anime_base.write_to_file(&mut file).expect("Can't write to file!");
+                let mut file = fs::File::create(&filename).expect("Cannot write list file");
+                anime_base.write_to_file(&mut file).expect("Cannot write to list file");
                 save_flag = true;
             }
             ExecCmd::Error(kind) => warn!("`{}`: {:?}", item, kind),
@@ -248,10 +242,6 @@ fn main() {
         }
     }
     if save_flag {
-        println!("{}", if update_flag || delete_flag {
-            "> changes saved".red()
-        } else {
-            "> nothing to save".red()
-        });
+        println!("{}", if update_flag || delete_flag { "> changes saved".red() } else { "> nothing to save".red() });
     }
 }
